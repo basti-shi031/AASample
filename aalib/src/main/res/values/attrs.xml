@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="AAView">
+        <attr name="center_color" format="color|reference"/><!--中间的大圆颜色-->
+        <attr name="center_radius" format="dimension"/><!--中间大圆的半径-->
+        <attr name="point_color" format="color|reference"/><!--周围小圆的颜色-->
+        <attr name="point_radius" format="dimension"/><!--周围小圆的半径-->
+        <attr name="text_color" format="color"/><!--数字的颜色-->
+        <attr name="center_text_size" format="dimension"/><!--中间数字的字体大小-->
+        <attr name="point_text_size" format="dimension"/><!--周围数字的字体大小-->
+        <attr name="line_color" format="color"/><!--连接线的颜色-->
+        <attr name="line_width" format="dimension"/><!--线的宽度-->
+    </declare-styleable>
+    
+    
+</resources>
