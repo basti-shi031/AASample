@@ -240,27 +240,23 @@ public class AAView extends View {
 
     private void drawInitPoint(Canvas canvas, int initCount) {
 
-        int angle = 360/initCount;
-
-        mStartAngle += rotateSpeed;
+        //mStartAngle += rotateSpeed;
 
         for (int i = 0;i<initCount;i++){
 
-            int myAngle = angle*i+mStartAngle;
+            Point point = initPoints.get(i);
 
-            float cx = (float) (width/2 + Math.cos(myAngle*Math.PI/180) * line_length);
+            int myAngle = (int) (point.getAngle()+rotateSpeed);
+
+            float cx = (float) (width/2 + Math.cos(myAngle * Math.PI / 180) * line_length);
             float cy = (float) (width/2 + Math.sin(myAngle*Math.PI/180)*line_length);
 
-            Point point = new Point(cx,cy,myAngle,i+1);
+            point.setLocationInfo(cx,cy,myAngle);
 
             //绘制圆
-            canvas.drawCircle(cx,cy,point_radius,pointPaint);
+            canvas.drawCircle(point.getCx(),point.getCy(),point_radius,pointPaint);
             //绘制线
-            canvas.drawLine(width/2,width/2,cx,cy,linePaint);
-
-            //这里有问题
-            //===========
-            //initPoints.add(point);
+            canvas.drawLine(width/2,width/2,point.getCx(),point.getCy(),linePaint);
         }
     }
 
@@ -311,7 +307,20 @@ public class AAView extends View {
 
     public void setInitCount(int initCount) {
         this.initCount = initCount;
-        invalidate();
+
+        int angle = 360/initCount;
+
+        for (int i = 0;i<initCount;i++){
+
+            int myAngle = angle*i;
+
+            float cx = (float) (width/2 + Math.cos(myAngle*Math.PI/180) * line_length);
+            float cy = (float) (width/2 + Math.sin(myAngle*Math.PI/180)*line_length);
+
+            Point point = new Point(cx,cy,myAngle,i+1);
+
+            initPoints.add(point);
+        }
     }
 
     public void setRestCount(int restCount){

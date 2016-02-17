@@ -19,6 +19,13 @@ public class Point {
         this.id = id;
     }
 
+
+    public void setLocationInfo(float cx, float cy, float angle){
+        setAngle(angle);
+        setCy(cy);
+        setCx(cx);
+    }
+
     public float getCx() {
         return cx;
     }
