@@ -7,7 +7,7 @@ import android.content.Context;
  */
 public class DensityUtils {
 
-    public static float dp2px(Context context,float dp){
+    public static float dp2px(Context context, float dp) {
         final float scale = context.getResources().getDisplayMetrics().density;
         return (int) (dp * scale + 0.5f);
     }

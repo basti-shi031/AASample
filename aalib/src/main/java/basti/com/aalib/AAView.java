@@ -8,16 +8,17 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import basti.com.aalib.callback.OnGameFinished;
+import basti.com.aalib.callback.OnPointBiuFinished;
+
 /**
- *
  * 游戏控件，找到的Demo游戏名称叫aa，所以直接叫AAView了
- *
+ * <p/>
  * Created by Bowen on 2016-02-16.
  */
 public class AAView extends View {
@@ -33,7 +34,7 @@ public class AAView extends View {
     private float lineWidth;//线的宽度
 
     //画笔
-    private Paint centerPaint,pointPaint,linePaint,textPaint;
+    private Paint centerPaint, pointPaint, linePaint, textPaint;
 
     //游戏配置参数
     private int level = 1;//旋转速度和level有关，level越高，速度越快
@@ -42,18 +43,25 @@ public class AAView extends View {
     private int rotateSpeed = 1;//旋转速度
     private int mStartAngle = 0;//旋转角度
     private int biuSpeed = 5;//发射速度
+    private int bottomSpeed = 1;//底部圆过渡到上一个圆位置的速度
 
     //其他参数
     private float line_length;//线的长度.两个圆心之间的距离
-    private float width,height;//控件宽度
+    private float width, height;//控件宽度
     private float actualWidth;//实际宽度，即去掉两边空隙的宽度
     private float offset;//待发射圆之间的距离，不包括半径
+    private boolean isGaming = true;//是否正在游戏中
 
     //圆的集合
     private List<Point> initPoints;//初始圆集合
     private List<Point> restPoints;//游戏中需要添加的圆集合
     private List<Point> addingPoints;//添加过程中的圆集合
     private List<Point> addedPoints;//添加完成的圆集合
+
+    //回调接口
+    private OnGameFinished onGameFinishedListener;
+    private OnPointBiuFinished onPointBiuFinishedListener;
+
     public AAView(Context context) {
         this(context, null);
     }
@@ -70,11 +78,11 @@ public class AAView extends View {
 
         //初始化一些paint
         initPaints();
-        
+
         //初始化数据
         initData();
 
-        //设置时间
+        //设置事件
         initEvents();
     }
 
@@ -83,23 +91,59 @@ public class AAView extends View {
             @Override
             public void onClick(View v) {
                 //发射函数
-                biu();
+                if (isGaming){
+                    biu();
+                }
             }
         });
 
     }
 
     private void biu() {
-        if (restCount > 0){
+        //发射剩下的第一个
+        biuPoint();
+        //将剩下的圆一次向前移
+        refreshBottom();
+    }
 
-            final Point point = restPoints.get(restCount-1);
+    private void refreshBottom() {
 
-            float destY =(float)(width*0.9-point_radius);
-            int duration = (int) ((point.getCy()-destY)/biuSpeed);
+        int tempCount = restPoints.size();
+
+        int duration = (int) ((point_radius * 2 + offset) / bottomSpeed);
+
+        for (int i = tempCount - 1; i >= 0; i--) {
+            final Point point = restPoints.get(i);
+
+            ValueAnimator valueAnimator = ValueAnimator.ofFloat(point.getCy(),
+                    width + center_radius + point_radius * (2 * (tempCount - 1 - i) + 1) + (tempCount - 1 - i) * offset);
+            valueAnimator.setDuration(duration);
+            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    point.setCy((Float) animation.getAnimatedValue());
+                }
+            });
+            valueAnimator.start();
+        }
+
+    }
+
+    private void biuPoint() {
+
+        int tempCount = restPoints.size();
+
+        if (tempCount > 0) {
+
+            final Point point = restPoints.get(tempCount - 1);
+
+            float destY = (float) (width * 0.9 - point_radius);
+            int duration = (int) ((point.getCy() - destY) / biuSpeed);
             //移除
-            restPoints.remove(restCount-1);
-            restCount--;
-            ValueAnimator valueAnimator = ValueAnimator.ofFloat(point.getCy(),destY);
+            restPoints.remove(tempCount - 1);
+            tempCount--;
+            final ValueAnimator valueAnimator = ValueAnimator.ofFloat(point.getCy(), destY);
+            final ValueAnimatorUtils valueAnimatorUtils = new ValueAnimatorUtils(tempCount, valueAnimator);
             valueAnimator.setDuration(duration);
             valueAnimator.setRepeatCount(0);
             //添加到待完成圆的队列中
@@ -115,11 +159,25 @@ public class AAView extends View {
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
 
-                    if (checkCrash(point)) {
+                    if (onPointBiuFinishedListener != null) {
+                        onPointBiuFinishedListener.onPointFinished(valueAnimatorUtils.getIndex());
+                    }
 
+                    if (checkCrash(point)) {
+                        //游戏失败
+                        isGaming = false;
+                        if (onGameFinishedListener != null) {
+                            onGameFinishedListener.onFail();
+                        }
                     } else {
                         addingPoints.remove(point);
                         addedPoints.add(point);
+
+                        if (restPoints.size() == 0 && addingPoints.size() == 0 && onGameFinishedListener != null) {
+                            //游戏结束
+                            isGaming = false;
+                            onGameFinishedListener.onSuccess();
+                        }
                     }
                 }
             });
@@ -129,7 +187,21 @@ public class AAView extends View {
 
     //碰撞检测
     private boolean checkCrash(Point point) {
-        return false;
+
+        //内存中一共有 个Point队列
+        //1.初始Point队列
+        //2.已经发射完毕的Point队列
+        //3.正在发射过程中的Point队列
+        //4.待发射的Point队列
+        //碰撞检测即用参数中传来的point和初始Point队列和已经发射完毕的Point队列中的(所有)Point进行距离判断
+        //和所有Point进行判断，效率相对较低
+        //稍微提高一下效率的方法是，与距离90度最近的点进行判断
+
+        Point initPoint = CrashUtils.getTheClosestPoint(initPoints);
+        Point addedPoint = CrashUtils.getTheClosestPoint(addedPoints);
+
+        return CrashUtils.checkCrash(point, initPoint, point_radius) ||
+                CrashUtils.checkCrash(point, addedPoint, point_radius);
     }
 
     private void initData() {
@@ -145,17 +217,17 @@ public class AAView extends View {
 
         width = w;
         height = h;
-        actualWidth = (float) (width*0.8);
-        line_length = actualWidth/2 - point_radius;
-        offset = (height - width - center_radius - 3*2*point_radius) / 3;
+        actualWidth = (float) (width * 0.8);
+        line_length = actualWidth / 2 - point_radius;
+        offset = (height - width - center_radius - 3 * 2 * point_radius) / 3;
 
         initRestPoint();
     }
 
     private void initRestPoint() {
 
-        for (int i = 0;i < restCount;i++){
-            Point point = new Point(width/2,width+center_radius+point_radius*(2*(restCount-1-i)+1)+(restCount-1-i)*offset, 90,(restCount-1-i)+1);
+        for (int i = 0; i < restCount; i++) {
+            Point point = new Point(width / 2, width + center_radius + point_radius * (2 * (restCount - 1 - i) + 1) + (restCount - 1 - i) * offset, 90, (restCount - 1 - i) + 1);
             restPoints.add(point);
         }
 
@@ -169,22 +241,22 @@ public class AAView extends View {
         drawCenter(canvas);
 
         //绘制开始时的圆
-        if(initCount > 0){
+        if (initCount > 0) {
             drawInitPoint(canvas, initCount);
         }
 
         //绘制需要添加的圆
-        if (restCount > 0){
-            drawRoundPoint(canvas,restCount);
+        if (restCount > 0) {
+            drawRoundPoint(canvas, restCount);
         }
 
         //绘制添加过程中的圆
-        if (addingPoints.size() > 0){
+        if (addingPoints.size() > 0) {
             drawAddingPoint(canvas);
         }
 
         //绘制已经添加完成的圆
-        if (addedPoints.size() > 0){
+        if (addedPoints.size() > 0) {
             drawAddedPoint(canvas);
         }
         invalidate();
@@ -195,22 +267,26 @@ public class AAView extends View {
         int size = addedPoints.size();
 
 
-
-        for (int i = 0;i<size;i++){
+        for (int i = 0; i < size; i++) {
 
             Point point = addedPoints.get(i);
 
-            point.setAngle(point.getAngle() + rotateSpeed);
+
+            if (isGaming) {
+                point.setAngle(point.getAngle() + rotateSpeed);
+            }
 
             float myAngle = point.getAngle();
 
-            float cx = (float) (width/2 + Math.cos(myAngle*Math.PI/180) * line_length);
-            float cy = (float) (width/2 + Math.sin(myAngle*Math.PI/180)*line_length);
+            float cx = (float) (width / 2 + Math.cos(myAngle * Math.PI / 180) * line_length);
+            float cy = (float) (width / 2 + Math.sin(myAngle * Math.PI / 180) * line_length);
+
+            point.setLocationInfo(cx, cy, myAngle);
 
             //绘制圆
-            canvas.drawCircle(cx,cy,point_radius,pointPaint);
+            canvas.drawCircle(cx, cy, point_radius, pointPaint);
             //绘制线
-            canvas.drawLine(width/2,width/2,cx,cy,linePaint);
+            canvas.drawLine(width / 2, width / 2, cx, cy, linePaint);
         }
 
     }
@@ -219,7 +295,7 @@ public class AAView extends View {
 
         int size = addingPoints.size();
 
-        for (int i = 0;i<size;i++){
+        for (int i = 0; i < size; i++) {
             Point point = addingPoints.get(i);
             canvas.drawCircle(point.getCx(), point.getCy(), point_radius, pointPaint);
         }
@@ -228,10 +304,12 @@ public class AAView extends View {
 
     private void drawRoundPoint(Canvas canvas, int restCount) {
 
-        for (int i = restCount-1;i>=0;i--){
+        int tempCount = restPoints.size();
+
+        for (int i = tempCount - 1; i >= 0; i--) {
             Point point = restPoints.get(i);
             canvas.drawCircle(point.getCx(), point.getCy(), point_radius, pointPaint);
-            if (i == restCount - 3){
+            if (i == tempCount - 3) {
                 break;
             }
 
@@ -240,23 +318,28 @@ public class AAView extends View {
 
     private void drawInitPoint(Canvas canvas, int initCount) {
 
-        //mStartAngle += rotateSpeed;
-
-        for (int i = 0;i<initCount;i++){
+        for (int i = 0; i < initCount; i++) {
 
             Point point = initPoints.get(i);
 
-            int myAngle = (int) (point.getAngle()+rotateSpeed);
+            int myAngle = (int) point.getAngle();
 
-            float cx = (float) (width/2 + Math.cos(myAngle * Math.PI / 180) * line_length);
-            float cy = (float) (width/2 + Math.sin(myAngle*Math.PI/180)*line_length);
+            if (isGaming) {
+                myAngle = (int) (point.getAngle() + rotateSpeed);
+            }
 
-            point.setLocationInfo(cx,cy,myAngle);
+            float cx = (float) (width / 2 + Math.cos(myAngle * Math.PI / 180) * line_length);
+            float cy = (float) (width / 2 + Math.sin(myAngle * Math.PI / 180) * line_length);
+
+            //更新圆的位置
+            point.setLocationInfo(cx, cy, myAngle);
 
             //绘制圆
-            canvas.drawCircle(point.getCx(),point.getCy(),point_radius,pointPaint);
+            canvas.drawCircle(point.getCx(), point.getCy(), point_radius, pointPaint);
             //绘制线
-            canvas.drawLine(width/2,width/2,point.getCx(),point.getCy(),linePaint);
+            canvas.drawLine(width / 2, width / 2, point.getCx(), point.getCy(), linePaint);
+            //绘制数字
+            canvas.drawText(point.getId() + "", point.getCx(), point.getCy(), textPaint);
         }
     }
 
@@ -278,21 +361,24 @@ public class AAView extends View {
         pointPaint.setStyle(Paint.Style.FILL);
         pointPaint.setColor(pointColor);
 
-        linePaint= new Paint();
+        linePaint = new Paint();
         linePaint.setAntiAlias(true);
         linePaint.setStyle(Paint.Style.FILL);
         linePaint.setColor(lineColor);
         linePaint.setStrokeWidth(lineWidth);
 
         textPaint = new Paint();
+        textPaint.setAntiAlias(true);
+        textPaint.setColor(textColor);
+        textPaint.setTextSize(pointTextsize);
     }
 
 
     //自定义属性
     private void initAttr(Context context, AttributeSet attrs) {
-        TypedArray ta = context.obtainStyledAttributes(attrs,R.styleable.AAView);
+        TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.AAView);
 
-        centerColor = ta.getColor(R.styleable.AAView_center_color,getResources().getColor(R.color.black));
+        centerColor = ta.getColor(R.styleable.AAView_center_color, getResources().getColor(R.color.black));
         center_radius = ta.getFloat(R.styleable.AAView_center_radius, DensityUtils.dp2px(context, Config.CENTER_RADIUS));
         pointColor = ta.getColor(R.styleable.AAView_point_color, getResources().getColor(R.color.black));
         point_radius = ta.getFloat(R.styleable.AAView_point_radius, DensityUtils.dp2px(context, Config.POINT_RADIUS));
@@ -308,22 +394,49 @@ public class AAView extends View {
     public void setInitCount(int initCount) {
         this.initCount = initCount;
 
-        int angle = 360/initCount;
+        int angle = 360 / initCount;
 
-        for (int i = 0;i<initCount;i++){
+        for (int i = 0; i < initCount; i++) {
 
-            int myAngle = angle*i;
+            int myAngle = angle * i;
 
-            float cx = (float) (width/2 + Math.cos(myAngle*Math.PI/180) * line_length);
-            float cy = (float) (width/2 + Math.sin(myAngle*Math.PI/180)*line_length);
+            float cx = (float) (width / 2 + Math.cos(myAngle * Math.PI / 180) * line_length);
+            float cy = (float) (width / 2 + Math.sin(myAngle * Math.PI / 180) * line_length);
 
-            Point point = new Point(cx,cy,myAngle,i+1);
+            Point point = new Point(cx, cy, myAngle, i + 1);
 
             initPoints.add(point);
         }
     }
 
-    public void setRestCount(int restCount){
+    public void setRestCount(int restCount) {
         this.restCount = restCount;
     }
+
+    public void setOnGameFinishedListener(OnGameFinished listener) {
+        onGameFinishedListener = listener;
+    }
+
+    public void setOnPointBiuFinishedListener(OnPointBiuFinished listener) {
+        onPointBiuFinishedListener = listener;
+    }
+
+    public void restart(){
+        clearAllList();
+    }
+
+    public void clearAllList() {
+
+        restPoints.clear();
+        addedPoints.clear();
+        addingPoints.clear();
+        initPoints.clear();
+
+        setInitCount(initCount);
+        setRestCount(restCount);
+        initRestPoint();
+
+        isGaming = true;
+    }
+
 }
