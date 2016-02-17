@@ -40,7 +40,7 @@ public class AAView extends View {
     private int level = 1;//旋转速度和level有关，level越高，速度越快
     private int initCount;//游戏开始时周围圆的数量
     private int restCount;//需要添加的圆的数量
-    private int rotateSpeed = 1;//旋转速度
+    private float rotateSpeed = 1;//旋转速度
     private int mStartAngle = 0;//旋转角度
     private int biuSpeed = 5;//发射速度
     private int bottomSpeed = 1;//底部圆过渡到上一个圆位置的速度
@@ -322,10 +322,10 @@ public class AAView extends View {
 
             Point point = initPoints.get(i);
 
-            int myAngle = (int) point.getAngle();
+            float myAngle = point.getAngle();
 
             if (isGaming) {
-                myAngle = (int) (point.getAngle() + rotateSpeed);
+                myAngle = (point.getAngle() + rotateSpeed);
             }
 
             float cx = (float) (width / 2 + Math.cos(myAngle * Math.PI / 180) * line_length);
@@ -439,4 +439,7 @@ public class AAView extends View {
         isGaming = true;
     }
 
+    public void setRotateSpeed(float rotateSpeed){
+        this.rotateSpeed = rotateSpeed;
+    }
 }
