@@ -8,6 +8,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
@@ -155,33 +156,37 @@ public class AAView extends View {
                 @Override
                 public void onAnimationUpdate(ValueAnimator animation) {
                     point.setCy((Float) animation.getAnimatedValue());
+                    Log.i("TAG", point.getCy() + "");
                 }
             });
             valueAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
-
-                    if (onPointBiuFinishedListener != null) {
-                        onPointBiuFinishedListener.onPointFinished(valueAnimatorUtils.getIndex());
-                    }
-
-                    if (checkCrash(point)) {
-                        //游戏失败
-                        isGaming = false;
-                        if (onGameFinishedListener != null) {
-                            onGameFinishedListener.onFail();
+                    Log.i("TAG", "true");
+                    if (isGaming) {
+                        if (onPointBiuFinishedListener != null) {
+                            onPointBiuFinishedListener.onPointFinished(valueAnimatorUtils.getIndex());
                         }
-                    } else {
-                        addingPoints.remove(point);
-                        addedPoints.add(point);
 
-                        if (restPoints.size() == 0 && addingPoints.size() == 0 && onGameFinishedListener != null) {
-                            //游戏结束
+                        if (checkCrash(point)) {
+                            //游戏失败
                             isGaming = false;
-                            onGameFinishedListener.onSuccess();
+                            if (onGameFinishedListener != null) {
+                                onGameFinishedListener.onFail();
+                            }
+                        } else {
+                            addingPoints.remove(point);
+                            addedPoints.add(point);
+
+                            if (restPoints.size() == 0 && addingPoints.size() == 0 && onGameFinishedListener != null) {
+                                //游戏结束
+                                isGaming = false;
+                                onGameFinishedListener.onSuccess();
+                            }
                         }
                     }
+
                 }
             });
             valueAnimator.start();
