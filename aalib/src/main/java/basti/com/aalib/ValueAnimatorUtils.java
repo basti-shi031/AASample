@@ -11,6 +11,17 @@ public class ValueAnimatorUtils {
 
     private ValueAnimator valueAnimator;
 
+    private long currentPlayTime;
+
+
+    public long getCurrentPlayTime() {
+        return currentPlayTime;
+    }
+
+    public void setCurrentPlayTime(long currentPlayTime) {
+        this.currentPlayTime = currentPlayTime;
+    }
+
     public int getIndex() {
         return index;
     }

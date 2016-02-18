@@ -11,6 +11,15 @@ public class Point {
     private float cy;//圆心y
     private float angle;//所在的角度 0-360;
     private int id;//第id个圆
+    private ValueAnimatorUtils valueAnimatorUtils;//每个圆的动画工具类
+
+    public ValueAnimatorUtils getValueAnimatorUtils() {
+        return valueAnimatorUtils;
+    }
+
+    public void setValueAnimatorUtils(ValueAnimatorUtils valueAnimatorUtils) {
+        this.valueAnimatorUtils = valueAnimatorUtils;
+    }
 
     public Point(float cx, float cy, float angle, int id) {
         this.cx = cx;

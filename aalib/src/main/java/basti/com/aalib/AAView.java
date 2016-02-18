@@ -42,8 +42,8 @@ public class AAView extends View {
     private int restCount;//需要添加的圆的数量
     private float rotateSpeed = 1;//旋转速度
     private int mStartAngle = 0;//旋转角度
-    private int biuSpeed = 5;//发射速度
-    private int bottomSpeed = 1;//底部圆过渡到上一个圆位置的速度
+    private float biuSpeed = (float) 0.04;//发射速度
+    private float bottomSpeed = (float) 0.04;//底部圆过渡到上一个圆位置的速度
 
     //其他参数
     private float line_length;//线的长度.两个圆心之间的距离
@@ -91,7 +91,7 @@ public class AAView extends View {
             @Override
             public void onClick(View v) {
                 //发射函数
-                if (isGaming){
+                if (isGaming) {
                     biu();
                 }
             }
@@ -124,7 +124,9 @@ public class AAView extends View {
                     point.setCy((Float) animation.getAnimatedValue());
                 }
             });
+            point.setValueAnimatorUtils(new ValueAnimatorUtils(tempCount - 1 - i, valueAnimator));
             valueAnimator.start();
+            valueAnimator.setCurrentPlayTime(point.getValueAnimatorUtils().getCurrentPlayTime());
         }
 
     }
@@ -146,6 +148,7 @@ public class AAView extends View {
             final ValueAnimatorUtils valueAnimatorUtils = new ValueAnimatorUtils(tempCount, valueAnimator);
             valueAnimator.setDuration(duration);
             valueAnimator.setRepeatCount(0);
+            point.setValueAnimatorUtils(valueAnimatorUtils);
             //添加到待完成圆的队列中
             addingPoints.add(point);
             valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -182,6 +185,7 @@ public class AAView extends View {
                 }
             });
             valueAnimator.start();
+            valueAnimator.setCurrentPlayTime(point.getValueAnimatorUtils().getCurrentPlayTime());
         }
     }
 
@@ -441,5 +445,38 @@ public class AAView extends View {
 
     public void setRotateSpeed(float rotateSpeed){
         this.rotateSpeed = rotateSpeed;
+    }
+
+    public void pause() {
+
+        isGaming = false;
+
+        int addingPointsSize = addingPoints.size();
+        for (int i = 0;i<addingPointsSize;i++){
+
+            Point point = addingPoints.get(i);
+
+            if (point.getValueAnimatorUtils() != null){
+                //动画已经开始播放
+                point.getValueAnimatorUtils().setCurrentPlayTime(
+                        point.getValueAnimatorUtils().getValueAnimator().getCurrentPlayTime());
+
+                point.getValueAnimatorUtils().getValueAnimator().cancel();
+            }
+        }
+
+        int restPointsSize = restPoints.size();
+        for (int i = 0;i<restPointsSize;i++){
+
+            Point point = restPoints.get(i);
+
+            if (point.getValueAnimatorUtils() != null){
+                //动画已经开始播放
+                point.getValueAnimatorUtils().setCurrentPlayTime(
+                        point.getValueAnimatorUtils().getValueAnimator().getCurrentPlayTime());
+                point.getValueAnimatorUtils().getValueAnimator().cancel();
+            }
+        }
+
     }
 }

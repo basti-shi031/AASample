@@ -19,7 +19,7 @@ import basti.com.aalib.callback.OnPointBiuFinished;
 public class MainActivity extends AppCompatActivity {
 
     private AAView mAAView;
-    private Button button;
+    private Button bt_restart,bt_pause;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,18 +51,25 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        button.setOnClickListener(new View.OnClickListener() {
+        bt_restart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mAAView.restart();
             }
         });
 
+        bt_pause.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mAAView.pause();
+            }
+        });
     }
 
     private void initView() {
 
         mAAView = (AAView) findViewById(R.id.aaview);
-        button = (Button) findViewById(R.id.restart);
+        bt_restart = (Button) findViewById(R.id.restart);
+        bt_pause = (Button) findViewById(R.id.pause);
     }
 }
