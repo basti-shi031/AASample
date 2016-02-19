@@ -28,10 +28,20 @@ public class MainActivity extends AppCompatActivity {
 
         initView();
 
+        //设置初始时圆的个数
         mAAView.setInitCount(3);
+        //设置需要添加圆的个数
         mAAView.setRestCount(5);
+        //设置旋转速度
         mAAView.setRotateSpeed((float) 1.5);
+        //设置发射速度
+        mAAView.setBiuSpeed(5f);
+        //设置底部动画速度
+        mAAView.setBottomSpeed(1f);
+        //设置关卡
+        mAAView.setLevel(1);
 
+        //游戏结束的回调函数
         mAAView.setOnGameFinishedListener(new OnGameFinished() {
             @Override
             public void onSuccess() {
@@ -44,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        //每发射一个圆的回调函数
         mAAView.setOnPointBiuFinishedListener(new OnPointBiuFinished() {
             @Override
             public void onPointFinished(int index) {
@@ -54,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         bt_restart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //重新开始
                 mAAView.restart();
             }
         });
@@ -61,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
         bt_pause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //暂停
                 mAAView.pause();
             }
         });
@@ -68,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         bt_resume.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //暂停后继续
                 mAAView.resume();
             }
         });
