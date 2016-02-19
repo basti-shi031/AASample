@@ -34,7 +34,7 @@ public class AAView extends View {
     private float lineWidth;//线的宽度
 
     //画笔
-    private Paint centerPaint, pointPaint, linePaint, roundTextPaint,centerTextPaint;
+    private Paint centerPaint, pointPaint, linePaint, roundTextPaint, centerTextPaint;
 
     //游戏配置参数
     private int level = 1;//旋转速度和level有关，level越高，速度越快
@@ -127,6 +127,15 @@ public class AAView extends View {
             point.setValueAnimatorUtils(new ValueAnimatorUtils(tempCount - 1 - i, valueAnimator));
             valueAnimator.start();
             valueAnimator.setCurrentPlayTime(point.getValueAnimatorUtils().getCurrentPlayTime());
+            valueAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    if (isGaming){
+                        point.setValueAnimatorUtils(null);
+                    }
+                }
+            });
         }
 
     }
@@ -162,6 +171,9 @@ public class AAView extends View {
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
                     if (isGaming) {
+
+                        point.setValueAnimatorUtils(null);
+
                         if (onPointBiuFinishedListener != null) {
                             onPointBiuFinishedListener.onPointFinished(valueAnimatorUtils.getIndex());
                         }
@@ -292,8 +304,8 @@ public class AAView extends View {
             //绘制圆
             canvas.drawCircle(cx, cy, point_radius, pointPaint);
             //绘制线
-            canvas.drawLine((float) (width / 2 + center_radius*Math.cos(point.getAngle()*Math.PI/180)), (float) (width / 2 + center_radius*Math.sin(point.getAngle() * Math.PI / 180)), point.getCx(), point.getCy(), linePaint);
-            canvas.drawText(point.getId() + "", point.getCx(), point.getCy()+pointTextsize/4, roundTextPaint);
+            canvas.drawLine((float) (width / 2 + center_radius * Math.cos(point.getAngle() * Math.PI / 180)), (float) (width / 2 + center_radius * Math.sin(point.getAngle() * Math.PI / 180)), point.getCx(), point.getCy(), linePaint);
+            canvas.drawText(point.getId() + "", point.getCx(), point.getCy() + pointTextsize / 4, roundTextPaint);
 
         }
 
@@ -319,7 +331,7 @@ public class AAView extends View {
         for (int i = tempCount - 1; i >= 0; i--) {
             Point point = restPoints.get(i);
             canvas.drawCircle(point.getCx(), point.getCy(), point_radius, pointPaint);
-            canvas.drawText(point.getId() + "", point.getCx(), point.getCy()+pointTextsize/4, roundTextPaint);
+            canvas.drawText(point.getId() + "", point.getCx(), point.getCy() + pointTextsize / 4, roundTextPaint);
             if (i == tempCount - 3) {
                 break;
             }
@@ -348,9 +360,9 @@ public class AAView extends View {
             //绘制圆
             canvas.drawCircle(point.getCx(), point.getCy(), point_radius, pointPaint);
             //绘制线
-            canvas.drawLine((float) (width / 2 + center_radius*Math.cos(point.getAngle()*Math.PI/180)), (float) (width / 2 + center_radius*Math.sin(point.getAngle() * Math.PI / 180)), point.getCx(), point.getCy(), linePaint);
+            canvas.drawLine((float) (width / 2 + center_radius * Math.cos(point.getAngle() * Math.PI / 180)), (float) (width / 2 + center_radius * Math.sin(point.getAngle() * Math.PI / 180)), point.getCx(), point.getCy(), linePaint);
             //绘制数字
-            canvas.drawText(point.getId() + "", point.getCx(), point.getCy()+pointTextsize/4, roundTextPaint);
+            canvas.drawText(point.getId() + "", point.getCx(), point.getCy() + pointTextsize / 4, roundTextPaint);
         }
     }
 
@@ -359,7 +371,7 @@ public class AAView extends View {
 
         canvas.drawCircle(width / 2, width / 2, center_radius, centerPaint);
 
-        canvas.drawText(level+"", width / 2, width / 2+centerTextsize/4, centerTextPaint);
+        canvas.drawText(level + "", width / 2, width / 2 + centerTextsize / 4, centerTextPaint);
 
     }
 
@@ -441,7 +453,7 @@ public class AAView extends View {
         onPointBiuFinishedListener = listener;
     }
 
-    public void restart(){
+    public void restart() {
         clearAllList();
     }
 
@@ -459,11 +471,11 @@ public class AAView extends View {
         isGaming = true;
     }
 
-    public void setRotateSpeed(float rotateSpeed){
+    public void setRotateSpeed(float rotateSpeed) {
         this.rotateSpeed = rotateSpeed;
     }
 
-    public void setLevel(int level){
+    public void setLevel(int level) {
         this.level = level;
     }
 
@@ -472,11 +484,11 @@ public class AAView extends View {
         isGaming = false;
 
         int addingPointsSize = addingPoints.size();
-        for (int i = 0;i<addingPointsSize;i++){
+        for (int i = 0; i < addingPointsSize; i++) {
 
             Point point = addingPoints.get(i);
 
-            if (point.getValueAnimatorUtils() != null){
+            if (point.getValueAnimatorUtils() != null) {
                 //动画已经开始播放
                 point.getValueAnimatorUtils().setCurrentPlayTime(
                         point.getValueAnimatorUtils().getValueAnimator().getCurrentPlayTime());
@@ -486,16 +498,56 @@ public class AAView extends View {
         }
 
         int restPointsSize = restPoints.size();
-        for (int i = 0;i<restPointsSize;i++){
+        for (int i = 0; i < restPointsSize; i++) {
 
             Point point = restPoints.get(i);
 
-            if (point.getValueAnimatorUtils() != null){
+            if (point.getValueAnimatorUtils() != null) {
                 //动画已经开始播放
                 point.getValueAnimatorUtils().setCurrentPlayTime(
                         point.getValueAnimatorUtils().getValueAnimator().getCurrentPlayTime());
                 point.getValueAnimatorUtils().getValueAnimator().cancel();
             }
         }
+    }
+
+    //暂停后继续
+    public void resume() {
+        //从暂停到继续需要做
+        //1. 恢复游戏开关，初始圆和已加入的圆开始恢复转动
+        isGaming = true;
+        //2. 正在发射过程中和底部的圆恢复动画播放
+        int addingPointsSize = addingPoints.size();
+        for (int i = 0; i < addingPointsSize; i++) {
+            Point point = addingPoints.get(i);
+            if (point.getValueAnimatorUtils() != null){
+                point.getValueAnimatorUtils().getValueAnimator().start();
+                point.getValueAnimatorUtils().getValueAnimator().setCurrentPlayTime(
+                        point.getValueAnimatorUtils().getCurrentPlayTime()
+                );
+            }
+        }
+
+        int restPointsSize = restPoints.size();
+        for (int i = 0; i < restPointsSize; i++) {
+            Point point = restPoints.get(i);
+            if (point.getValueAnimatorUtils() != null){
+
+                point.getValueAnimatorUtils().getValueAnimator().start();
+                point.getValueAnimatorUtils().getValueAnimator().setCurrentPlayTime(
+                        point.getValueAnimatorUtils().getCurrentPlayTime()
+                );
+            }
+        }
+    }
+
+    //设置底部动画速度
+    public void setBottomSpeed(float bottomSpeed) {
+        this.bottomSpeed = bottomSpeed;
+    }
+
+    //设置底部圆发射速度
+    public void setBiuSpeed(float biuSpeed) {
+        this.biuSpeed = biuSpeed;
     }
 }

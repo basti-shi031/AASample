@@ -16,16 +16,25 @@
         android:id="@+id/restart"
         android:text="restart"
         android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
         android:layout_marginBottom="8dp"/>
+    
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/resume"
+        android:text="resume"
+        android:layout_above="@id/restart"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="8dp"/>
+
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/pause"
         android:text="pause"
-        android:layout_alignParentBottom="true"
+        android:layout_above="@id/resume"
         android:layout_alignParentRight="true"
         android:layout_marginBottom="8dp"/>
-
-
 </RelativeLayout>
