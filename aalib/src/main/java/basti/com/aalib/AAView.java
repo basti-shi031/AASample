@@ -550,4 +550,41 @@ public class AAView extends View {
     public void setBiuSpeed(float biuSpeed) {
         this.biuSpeed = biuSpeed;
     }
+
+
+    public void setLineWidth(float lineWidth) {
+        this.lineWidth = DensityUtils.dp2px(getContext(),lineWidth);
+    }
+
+    public void setCenterColor(int centerColor) {
+        this.centerColor = centerColor;
+    }
+
+    public void setCenter_radius(float center_radius) {
+        this.center_radius = DensityUtils.dp2px(getContext(),center_radius);
+    }
+
+    public void setPointColor(int pointColor) {
+        this.pointColor = pointColor;
+    }
+
+    public void setPoint_radius(float point_radius) {
+        this.point_radius = DensityUtils.dp2px(getContext(), point_radius);
+    }
+
+    public void setTextColor(int textColor) {
+        this.textColor = textColor;
+    }
+
+    public void setCenterTextsize(float centerTextsize) {
+        this.centerTextsize = DensityUtils.sp2px(getContext(),centerTextsize);
+    }
+
+    public void setPointTextsize(float pointTextsize) {
+        this.pointTextsize = DensityUtils.sp2px(getContext(),pointTextsize);
+    }
+
+    public void setLineColor(int lineColor) {
+        this.lineColor = lineColor;
+    }
 }

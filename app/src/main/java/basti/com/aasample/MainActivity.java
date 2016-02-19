@@ -40,6 +40,10 @@ public class MainActivity extends AppCompatActivity {
         mAAView.setBottomSpeed(1f);
         //设置关卡
         mAAView.setLevel(1);
+        //其他涉及到Dimension设置的函数
+        //setXXX(float dimension),
+        //单位：字体大小：sp
+        //      半径、线的宽度等：dp
 
         //游戏结束的回调函数
         mAAView.setOnGameFinishedListener(new OnGameFinished() {
