@@ -8,7 +8,6 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ public class AAView extends View {
     private float lineWidth;//线的宽度
 
     //画笔
-    private Paint centerPaint, pointPaint, linePaint, textPaint;
+    private Paint centerPaint, pointPaint, linePaint, roundTextPaint,centerTextPaint;
 
     //游戏配置参数
     private int level = 1;//旋转速度和level有关，level越高，速度越快
@@ -43,8 +42,8 @@ public class AAView extends View {
     private int restCount;//需要添加的圆的数量
     private float rotateSpeed = 1;//旋转速度
     private int mStartAngle = 0;//旋转角度
-    private float biuSpeed = (float) 0.04;//发射速度
-    private float bottomSpeed = (float) 0.04;//底部圆过渡到上一个圆位置的速度
+    private float biuSpeed = (float) 5;//发射速度
+    private float bottomSpeed = (float) 1;//底部圆过渡到上一个圆位置的速度
 
     //其他参数
     private float line_length;//线的长度.两个圆心之间的距离
@@ -156,14 +155,12 @@ public class AAView extends View {
                 @Override
                 public void onAnimationUpdate(ValueAnimator animation) {
                     point.setCy((Float) animation.getAnimatedValue());
-                    Log.i("TAG", point.getCy() + "");
                 }
             });
             valueAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
-                    Log.i("TAG", "true");
                     if (isGaming) {
                         if (onPointBiuFinishedListener != null) {
                             onPointBiuFinishedListener.onPointFinished(valueAnimatorUtils.getIndex());
@@ -236,7 +233,7 @@ public class AAView extends View {
     private void initRestPoint() {
 
         for (int i = 0; i < restCount; i++) {
-            Point point = new Point(width / 2, width + center_radius + point_radius * (2 * (restCount - 1 - i) + 1) + (restCount - 1 - i) * offset, 90, (restCount - 1 - i) + 1);
+            Point point = new Point(width / 2, width + center_radius + point_radius * (2 * (restCount - 1 - i) + 1) + (restCount - 1 - i) * offset, 90, (i) + 1);
             restPoints.add(point);
         }
 
@@ -295,7 +292,9 @@ public class AAView extends View {
             //绘制圆
             canvas.drawCircle(cx, cy, point_radius, pointPaint);
             //绘制线
-            canvas.drawLine(width / 2, width / 2, cx, cy, linePaint);
+            canvas.drawLine((float) (width / 2 + center_radius*Math.cos(point.getAngle()*Math.PI/180)), (float) (width / 2 + center_radius*Math.sin(point.getAngle() * Math.PI / 180)), point.getCx(), point.getCy(), linePaint);
+            canvas.drawText(point.getId() + "", point.getCx(), point.getCy()+pointTextsize/4, roundTextPaint);
+
         }
 
     }
@@ -307,6 +306,8 @@ public class AAView extends View {
         for (int i = 0; i < size; i++) {
             Point point = addingPoints.get(i);
             canvas.drawCircle(point.getCx(), point.getCy(), point_radius, pointPaint);
+            canvas.drawText(point.getId() + "", point.getCx(), point.getCy() + pointTextsize / 4, roundTextPaint);
+
         }
 
     }
@@ -318,6 +319,7 @@ public class AAView extends View {
         for (int i = tempCount - 1; i >= 0; i--) {
             Point point = restPoints.get(i);
             canvas.drawCircle(point.getCx(), point.getCy(), point_radius, pointPaint);
+            canvas.drawText(point.getId() + "", point.getCx(), point.getCy()+pointTextsize/4, roundTextPaint);
             if (i == tempCount - 3) {
                 break;
             }
@@ -346,9 +348,9 @@ public class AAView extends View {
             //绘制圆
             canvas.drawCircle(point.getCx(), point.getCy(), point_radius, pointPaint);
             //绘制线
-            canvas.drawLine(width / 2, width / 2, point.getCx(), point.getCy(), linePaint);
+            canvas.drawLine((float) (width / 2 + center_radius*Math.cos(point.getAngle()*Math.PI/180)), (float) (width / 2 + center_radius*Math.sin(point.getAngle() * Math.PI / 180)), point.getCx(), point.getCy(), linePaint);
             //绘制数字
-            canvas.drawText(point.getId() + "", point.getCx(), point.getCy(), textPaint);
+            canvas.drawText(point.getId() + "", point.getCx(), point.getCy()+pointTextsize/4, roundTextPaint);
         }
     }
 
@@ -356,6 +358,8 @@ public class AAView extends View {
     private void drawCenter(Canvas canvas) {
 
         canvas.drawCircle(width / 2, width / 2, center_radius, centerPaint);
+
+        canvas.drawText(level+"", width / 2, width / 2+centerTextsize/4, centerTextPaint);
 
     }
 
@@ -376,10 +380,17 @@ public class AAView extends View {
         linePaint.setColor(lineColor);
         linePaint.setStrokeWidth(lineWidth);
 
-        textPaint = new Paint();
-        textPaint.setAntiAlias(true);
-        textPaint.setColor(textColor);
-        textPaint.setTextSize(pointTextsize);
+        roundTextPaint = new Paint();
+        roundTextPaint.setAntiAlias(true);
+        roundTextPaint.setColor(textColor);
+        roundTextPaint.setTextSize(pointTextsize);
+        roundTextPaint.setTextAlign(Paint.Align.CENTER);
+
+        centerTextPaint = new Paint();
+        centerTextPaint.setAntiAlias(true);
+        centerTextPaint.setColor(textColor);
+        centerTextPaint.setTextSize(centerTextsize);
+        centerTextPaint.setTextAlign(Paint.Align.CENTER);
     }
 
 
@@ -452,6 +463,10 @@ public class AAView extends View {
         this.rotateSpeed = rotateSpeed;
     }
 
+    public void setLevel(int level){
+        this.level = level;
+    }
+
     public void pause() {
 
         isGaming = false;
@@ -482,6 +497,5 @@ public class AAView extends View {
                 point.getValueAnimatorUtils().getValueAnimator().cancel();
             }
         }
-
     }
 }
